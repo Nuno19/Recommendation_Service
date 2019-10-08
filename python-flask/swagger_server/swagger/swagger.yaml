@@ -115,6 +115,27 @@ paths:
         400:
           description: "bad input parameter"
       x-swagger-router-controller: "swagger_server.controllers.developers_controller"
+  /createUser:
+    get:
+      tags:
+      - "developers"
+      summary: "createUser"
+      description: "By passing in the appropriate options, you can search for\navailable\
+        \ cinemas\n"
+      operationId: "create_user"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "extID"
+        in: "query"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "user created"
+        400:
+          description: "bad input parameter"
+      x-swagger-router-controller: "swagger_server.controllers.developers_controller"
 definitions:
   Item:
     type: "object"
