@@ -1,0 +1,152 @@
+---
+swagger: "2.0"
+info:
+  description: "This is a recommendation API using k-means Clustering"
+  version: "1.0.0"
+  title: "Recommendation API"
+  contact:
+    email: "capela.nuno@ua.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "virtserver.swaggerhub.com"
+basePath: "/Nuno19/Recomendation_Service/1.0.0"
+tags:
+- name: "admins"
+  description: "Secured Admin-only calls"
+- name: "developers"
+  description: "Operations available to regular developers"
+schemes:
+- "https"
+paths:
+  /loadItemList:
+    post:
+      tags:
+      - "admins"
+      summary: "load list of items(csv) to the collection"
+      description: "Load list of items into the system\n"
+      operationId: "load_item_list"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "itemList"
+        in: "query"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "posted movies"
+        400:
+          description: "bad input parameter"
+      x-swagger-router-controller: "swagger_server.controllers.admins_controller"
+  /loadItem:
+    post:
+      tags:
+      - "admins"
+      summary: "load item(csv) to the collection"
+      description: "Load list of items into the system\n"
+      operationId: "load_item"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "item"
+        in: "query"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "posted movie"
+        400:
+          description: "bad input parameter"
+      x-swagger-router-controller: "swagger_server.controllers.admins_controller"
+  /setClusterNumber:
+    post:
+      tags:
+      - "admins"
+      summary: "set number of clusters"
+      description: "Load list of items into the system\n"
+      operationId: "set_cluster_count"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "itemList"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "number of cluster was set"
+        400:
+          description: "bad input parameter"
+      x-swagger-router-controller: "swagger_server.controllers.admins_controller"
+  /getRecommended:
+    get:
+      tags:
+      - "developers"
+      summary: "searches recommended"
+      description: "By passing in the appropriate options, you can search for\navailable\
+        \ cinemas\n"
+      operationId: "get_recommended"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "maxCount"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "movieId"
+        in: "query"
+        required: false
+        type: "integer"
+        minimum: 0
+        format: "int32"
+      responses:
+        200:
+          description: "cinemas found"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Item"
+        400:
+          description: "bad input parameter"
+      x-swagger-router-controller: "swagger_server.controllers.developers_controller"
+definitions:
+  Item:
+    type: "object"
+    required:
+    - "data"
+    - "id"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "d701748f0851"
+        description: "Identifier of the movie"
+      data:
+        type: "string"
+        example: "Data of the item"
+        description: "Data of the item"
+    example:
+      data: "Data of the item"
+      id: "d701748f0851"
+  CinemaItem:
+    type: "object"
+    required:
+    - "id"
+    - "name"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "d701748f0851"
+      name:
+        type: "string"
+        example: "Movie Title"
+      location:
+        type: "string"
+        example: "Aveiro"
