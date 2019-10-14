@@ -35,11 +35,10 @@ paths:
         type: "array"
         items:
           type: "string"
-          description: "Hello"
         collectionFormat: "multi"
       responses:
         200:
-          description: "posted movies"
+          description: "posted item list"
         400:
           description: "bad input parameter"
       x-swagger-router-controller: "swagger_server.controllers.admins_controller"
@@ -59,7 +58,7 @@ paths:
         type: "string"
       responses:
         200:
-          description: "posted movie"
+          description: "posted item"
         400:
           description: "bad input parameter"
       x-swagger-router-controller: "swagger_server.controllers.admins_controller"
@@ -116,27 +115,6 @@ paths:
         400:
           description: "bad input parameter"
       x-swagger-router-controller: "swagger_server.controllers.developers_controller"
-  /createUser:
-    get:
-      tags:
-      - "developers"
-      summary: "createUser"
-      description: "By passing in the appropriate options, you can search for\navailable\
-        \ cinemas\n"
-      operationId: "create_user"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "extID"
-        in: "query"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "user created"
-        400:
-          description: "bad input parameter"
-      x-swagger-router-controller: "swagger_server.controllers.developers_controller"
 definitions:
   Item:
     type: "object"
@@ -156,19 +134,3 @@ definitions:
     example:
       data: "Data of the item"
       id: "d701748f0851"
-  UserItem:
-    type: "object"
-    required:
-    - "id"
-    - "name"
-    properties:
-      id:
-        type: "string"
-        format: "uuid"
-        example: "d701748f0851"
-      name:
-        type: "string"
-        example: "Movie Title"
-      location:
-        type: "string"
-        example: "Aveiro"
