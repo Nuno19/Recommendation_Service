@@ -11,12 +11,69 @@
 package swagger
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 )
+
+var kmeans KMeans
+var tf_idf TF_IDF
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
 
 func LoadItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+
+	if kmeans.k == 0 {
+		fmt.Println("CREATED KMeans")
+		kmeans = KMeans{k: 3, maxIter: 100}
+	}
+	//if &tf_idf == nil {
+	fmt.Println("CREATED TF_IDF")
+	tf_idf = TF_IDF{}
+	//	}
+
+	keys, _ := r.URL.Query()["itemList"]
+	corpus := keys[0]
+
+	list := strings.Split(corpus, "\n")
+
+	corpusSet := make([]WordSet, len(list))
+	for i, l := range list {
+
+		corpusSet[i] = WordSet(strings.Split(l, " ")).toLower()
+	}
+
+	tf_idf.addToWordSet(corpusSet)
+	//fmt.Println("COUNT")
+	tf_idf.sortMap()
+	tf_idf.setCount(corpusSet)
+	//fmt.Println("TF")
+
+	for idx, val := range corpusSet {
+		tf_idf.computeTF(val, idx)
+	}
+
+	tf_idf.computeIDF()
+
+	//fmt.Println("TF_IDF")
+	tf_idf.computeTFIDF()
+
+	kmeans.fit(tf_idf.getAllPoints())
+
+	item := Item{Id: list[0], Data: list[kmeans.getPointIdxOfCentroid(0)[0]]}
+	js, err := json.Marshal(item)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(js)
 
 }
 
