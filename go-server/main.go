@@ -12,7 +12,9 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	// WARNING!
 	// Change this to a fully-qualified import path
@@ -26,7 +28,7 @@ import (
 
 func main() {
 	log.Printf("Server started")
-
+	rand.Seed(time.Now().Unix())
 	router := sw.NewRouter()
 
 	log.Fatal(http.ListenAndServe(":8080", router))

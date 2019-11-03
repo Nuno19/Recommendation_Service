@@ -55,6 +55,7 @@ func (slice WordSet) boolExists(word string) bool {
 	if i < len(slice) && slice[i] == word {
 		return true
 	}
+
 	return false
 }
 
@@ -74,18 +75,19 @@ func initCounts(set WordSet) WordCounts {
 	return cout
 }
 
-func (tf_idf *TF_IDF) setCount(corpus []WordSet) {
-	tf_idf.wordCountList = make([]WordCounts, len(corpus))
-	for i, set := range corpus {
-		tf_idf.wordCountList[i] = initCounts(tf_idf.wordSet)
-		for _, word := range set {
-			tf_idf.wordCountList[i][word]++
-		}
+func (tf_idf *TF_IDF) setCount(corpus WordSet) {
+	if len(tf_idf.wordCountList) == 0 {
+		tf_idf.wordCountList = []WordCounts{}
 	}
-	fmt.Print()
+	tf_idf.wordCountList = append(tf_idf.wordCountList, initCounts(tf_idf.wordSet))
+	idx := len(tf_idf.wordCountList) - 1
+	for _, word := range corpus {
+		tf_idf.wordCountList[idx][word]++
+	}
 }
 
-func (tf_idf *TF_IDF) computeTF(corpus WordSet, idx int) {
+func (tf_idf *TF_IDF) computeTF(corpus WordSet) {
+	idx := len(tf_idf.tf)
 	if len(tf_idf.tf) == 0 {
 		tf_idf.tf = []FloatMap{}
 	}
@@ -113,7 +115,6 @@ func (tf_idf *TF_IDF) computeIDF() {
 		idf[key] = math.Log(float64(n) / float64(count))
 	}
 	tf_idf.idf = idf
-	fmt.Println("")
 }
 
 func (tf_idf *TF_IDF) computeTFIDF() {
@@ -159,25 +160,6 @@ func (tf_idf *TF_IDF) getAllPoints() []Point {
 		pointArr[i] = tf_idf.getPointByIndex(i)
 	}
 	return pointArr
-}
-
-func (tf_idf *TF_IDF) normalize() {
-	mapF := initCounts(tf_idf.wordSet)
-	for i := range tf_idf.tfIdf {
-		for _, key := range tf_idf.wordSet {
-			if tf_idf.tfIdf[i][key] != 0 {
-				mapF[key]++
-			}
-		}
-	}
-	for k, val := range mapF {
-		if val == 0 {
-			fmt.Println("ZEROOOO")
-			for i := range tf_idf.tfIdf {
-				delete(tf_idf.tfIdf[i], k)
-			}
-		}
-	}
 }
 
 /*

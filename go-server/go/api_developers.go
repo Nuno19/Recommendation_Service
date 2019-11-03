@@ -11,10 +11,38 @@
 package swagger
 
 import (
+	"bufio"
+	"encoding/json"
 	"net/http"
+	"os"
+	"strconv"
 )
 
 func GetRecommended(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+
+	file, err := os.Open("files/Items.txt")
+	check(err)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	nodes := []Item{}
+
+	for scanner.Scan() {
+		nodes = append(nodes, Item{})
+		_ = json.Unmarshal([]byte(scanner.Text()), &nodes[len(nodes)-1])
+		//fmt.Print(nodes[i])
+	}
+
+	keys, _ := strconv.Atoi(r.URL.Query()["centID"][0])
+	kNearest := Items{}
+	for _, it := range nodes {
+		if it.BelongsTo == keys {
+			kNearest = append(kNearest, it)
+		}
+	}
+	l, _ := json.Marshal(kNearest)
+	w.Write(l)
 }

@@ -73,23 +73,33 @@ func (point Point) norm() float64 {
 	return math.Sqrt(norm)
 }
 
-func (kmeans *KMeans) initCentroids() {
+func (kmeans *KMeans) initCentroids() bool {
+	if len(kmeans.points) <= kmeans.k {
+		return false
+	}
 	kmeans.centroids = make([]Point, kmeans.k)
 	var perm = rand.Perm(len(kmeans.points))
 	for i := 0; i < kmeans.k; i++ {
 		kmeans.centroids[i] = kmeans.points[perm[i]]
 	}
+	return true
 }
 
 func (kmeans *KMeans) computeSSE() float64 {
+	var wg1 sync.WaitGroup
+	wg1.Add(len(kmeans.centroids))
 	distances := make(Point, len(kmeans.centroids))
-	for i, cent := range kmeans.centroids {
-		for j, point := range kmeans.points {
-			if kmeans.labels[j] == i {
-				distances[i] += point.subtract(cent).norm()
+	for i := range kmeans.centroids {
+		go func(i int) {
+			for j, point := range kmeans.points {
+				if kmeans.labels[j] == i {
+					distances[i] += point.subtract(kmeans.centroids[i]).norm()
+				}
 			}
-		}
+			defer wg1.Done()
+		}(i)
 	}
+	wg1.Wait()
 	distance := 0.0
 	for _, dist := range distances {
 		distance += math.Pow(dist, 2)
@@ -108,7 +118,6 @@ func (kmeans *KMeans) computeLabels() []int {
 			minIdx := -1
 			for j, cent := range kmeans.centroids {
 				distance := kmeans.points[i].pointDist(cent)
-
 				if distance < min {
 					min = distance
 					minIdx = j
@@ -174,21 +183,23 @@ func equals(points1 []Point, points2 []Point) bool {
 	return true
 }
 
-func (kmeans *KMeans) fit(pointList []Point) {
+func (kmeans *KMeans) fit(pointList []Point) bool {
 	if kmeans.k == 0 {
 		fmt.Printf("K not defined")
-		return
+		return false
 	}
 
 	kmeans.points = pointList
-	kmeans.initCentroids()
-
+	init := kmeans.initCentroids()
+	if !init {
+		return false
+	}
 	found := kmeans.update()
 	if found {
-		fmt.Printf("Centroids Found!\n")
-	} else {
-		fmt.Printf("Centroids Not Found!\n")
+		return true
 	}
+	return false
+
 }
 
 func (kmeans *KMeans) addPoint(point Point) {
@@ -281,6 +292,14 @@ func (kmeans *KMeans) labelsToString() string {
 func (kmeans *KMeans) labelCount() []int {
 	count := make([]int, len(kmeans.centroids))
 	for _, label := range kmeans.labels {
+		count[label]++
+	}
+	return count
+}
+
+func labelCount(labels []int, k int) []int {
+	count := make([]int, k)
+	for _, label := range labels {
 		count[label]++
 	}
 	return count

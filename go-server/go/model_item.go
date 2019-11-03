@@ -12,9 +12,14 @@ package swagger
 
 type Item struct {
 
-	// Identifier of the movie
+	// Identifier of the item
 	Id string `json:"id"`
 
 	// Data of the item
 	Data string `json:"data"`
+
+	//Which centroid is it nearest to
+	BelongsTo int `json:"belongsTo,omitempty"`
 }
+
+type Items []Item
