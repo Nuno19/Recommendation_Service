@@ -83,4 +83,10 @@ var routes = Routes{
 		"/Nuno19/Recomendation_Service/1.0.0/getRecommended",
 		GetRecommended,
 	},
+	Route{
+		"GetTextRecommended",
+		strings.ToUpper("Get"),
+		"/Nuno19/Recomendation_Service/1.0.0/GetTextRecommended",
+		GetTextRecommended,
+	},
 }

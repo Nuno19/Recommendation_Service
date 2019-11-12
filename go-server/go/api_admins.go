@@ -13,30 +13,47 @@ package swagger
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	kmeans "github.com/Nuno19/KMeans-Go"
+	tfidf "github.com/Nuno19/TF_IDF-Go"
+	"github.com/reiver/go-porterstemmer"
 )
 
-var kmeans KMeans = KMeans{k: 3, maxIter: 100}
-var tf_idf TF_IDF = TF_IDF{}
+var kmean kmeans.KMeans = kmeans.KMeans{K: 20, MaxIter: 100}
+
+var tf_idf tfidf.TF_IDF = tfidf.TF_IDF{}
 var lastIdx int
 var cList []string
-var stopWords = WordSet{"the", "a", "and", "you", "your", "he", "she", "his", "her", "\\N"}
+var stopWords = tfidf.WordSet{"the", "a", "and", "you", "your", "he", "she", "his", "her", "of", "at", "\\N"}
 var types []string
 
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+
+}
+func treatSentence(sentence string) tfidf.WordSet {
+	set := tfidf.WordSet{}
+	for _, word := range strings.Split(sentence, " ") {
+		word = treatWord(word)
+		if !stopWords.Exists(word) && word != "" && len(word) > 3 {
+			set = append(set, word)
+		}
+	}
+	return set
 }
 
 func treatWord(word string) string {
-	//word = porterstemmer.StemString(word)
+	word = porterstemmer.StemString(word)
+
 	var re = regexp.MustCompile(`(tt\d{7}\/\d{4}(-\d)?|(ch|co|ev|nm|tt)\d{7})`)
 	word = re.ReplaceAllString(word, "")
 	reg := regexp.MustCompile("[^A-Za-zÀ-ÿ]+")
@@ -46,6 +63,23 @@ func treatWord(word string) string {
 	return strings.ReplaceAll(word, "\"", "")
 }
 
+func clearItems(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	types = []string{}
+	cList = []string{}
+
+	dir, _ := os.Create("files/")
+	defer dir.Close()
+	dir.Sync()
+
+	s := "files/Items.txt"
+
+	f, _ := os.Create(s)
+	f.Sync()
+	defer f.Close()
+}
+
+//LoadItem - Loads data into the dataset
 func LoadItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -58,107 +92,56 @@ func LoadItem(w http.ResponseWriter, r *http.Request) {
 
 	cList = append(cList, list...)
 
-	corpusSet := make([]WordSet, len(list))
+	corpusSet := make([]tfidf.WordSet, len(list))
 	for i, l := range list {
-		l = strings.ReplaceAll(l, "\t", " ")
-		words := strings.Split(l, " ")
-		set := WordSet{}
-		for _, w := range words {
-			w = treatWord(w)
-			if !stopWords.exists(w) && w != "" && len(w) > 3 {
-				set = append(set, w)
-			}
+		if l != "" {
+			l = strings.ReplaceAll(l, "\t", " ")
 		}
-		corpusSet[i] = set
+		corpusSet[i] = treatSentence(l)
 	}
 
-	tf_idf.addToWordSet(corpusSet)
-	fmt.Printf("WORD  SET LENGTH : %d\n", len(tf_idf.wordSet))
-	tf_idf.sortMap()
+	tf_idf.AddToWordSet(corpusSet)
+	fmt.Printf("WORD  SET LENGTH : %d\n", len(tf_idf.SetWord))
+	tf_idf.SortMap()
 
 	for _, val := range corpusSet {
-		tf_idf.setCount(val)
-		tf_idf.computeTF(val)
+		tf_idf.SetCount(val)
+		tf_idf.ComputeTF(val)
 	}
 	//fmt.Println(corpusSet[0])
-	//fmt.Println(tf_idf.wordCountList[0])
+	//fmt.Println(tf_idf.WordCountList[0])
 
-	//tf_idf.computeIDF()
+	tf_idf.ComputeIDF()
 
-	//tf_idf.computeTFIDF()
-
-	fitted := kmeans.fit(tf_idf.getAllPoints())
-	if !fitted {
-		http.Error(w, "Couldn't fit points in centroids!", http.StatusInternalServerError)
-		return
-	}
-	dir, err := os.Create("files/")
-	defer dir.Close()
-	dir.Sync()
-
-	s := "files/Items.txt"
-
-	f, err := os.Create(s)
-	check(err)
-
-	for i, l := range cList {
-		vals := strings.Split(l, "\t")
-		m := map[string]string{}
-
-		for j, lab := range types {
-			m[lab] = vals[j]
-		}
-
-		js, err := json.Marshal(m)
-		check(err)
-
-		it := Item{Id: strconv.FormatInt(int64(i), 10), Data: string(js), BelongsTo: kmeans.labels[i]}
-
-		t, err := json.Marshal(it)
-		check(err)
-
-		f.Write(t)
-		f.WriteString("\n")
-
-		f.Sync()
-	}
-	defer f.Close()
-	lastIdx += len(list)
-	sse := kmeans.computeSSE()
-
-	fmt.Printf("LabelCount: %s Error: %f\n", fmt.Sprint(kmeans.labelCount()), sse)
-	item := map[string]string{"Info": fmt.Sprintf("Uploaded %d items now there is %d total items! With error: %f", len(list), lastIdx, sse)}
-
-	js, err := json.Marshal(item)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(js)
+	tf_idf.ComputeTFIDF()
 
 }
 
+//LoadItemList - Reffit Data into new clusters
 func LoadItemList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	Kerr := math.MaxFloat64
-	labels := make([]int, len(kmeans.points))
-
-	for i := 0; i < 10; i++ {
-		fitted := kmeans.fit(tf_idf.getAllPoints())
-		if !fitted {
-			http.Error(w, "Couldn't fit points in centroids!", http.StatusInternalServerError)
-			return
-		}
-		sse := kmeans.computeSSE()
-		if sse < Kerr {
-			labels = kmeans.labels
-			Kerr = sse
-			fmt.Printf("LabelCount: %s ERROR: %f\n", fmt.Sprint(labelCount(labels, kmeans.k)), Kerr)
+	labels := make([]int, len(kmean.Points))
+	k := kmean.K
+	finalK := kmean.K
+	for j := 0; j < 4; j++ {
+		for i := 0; i < 3; i++ {
+			kmean.K = k + j
+			fitted := kmean.Fit(tf_idf.GetAllPointsTFIDF())
+			if !fitted {
+				continue
+			}
+			sse := kmean.ComputeSSE()
+			if sse < Kerr {
+				finalK = kmean.K
+				labels = kmean.Labels
+				Kerr = sse
+				fmt.Printf("LabelCount: %s ERROR: %f\n", fmt.Sprint(kmeans.LabelCount(labels, kmean.K)), Kerr)
+			}
 		}
 	}
+	kmean.K = finalK
 	dir, err := os.Create("files/")
 	defer dir.Close()
 	dir.Sync()
@@ -179,9 +162,7 @@ func LoadItemList(w http.ResponseWriter, r *http.Request) {
 		js, err := json.Marshal(m)
 		check(err)
 
-		it := Item{Id: strconv.FormatInt(int64(i), 10), Data: string(js), BelongsTo: labels[i]}
-
-		t, err := json.Marshal(it)
+		t, err := json.Marshal(Item{Id: strconv.FormatInt(int64(i), 10), Data: string(js), BelongsTo: labels[i]})
 		check(err)
 
 		f.Write(t)
@@ -190,20 +171,16 @@ func LoadItemList(w http.ResponseWriter, r *http.Request) {
 		f.Sync()
 	}
 
-	defer f.Close()
-	item := map[string]string{"Info": fmt.Sprintf("Recalculated Kmeans with error %f", Kerr)}
+	f.Close()
 
-	js, err := json.Marshal(item)
+	js, _ := json.Marshal(map[string]string{"Status": "Success", "SSE": fmt.Sprintf("%f", Kerr), "LabelCounts": fmt.Sprint(kmeans.LabelCount(labels, kmean.K)), "K": fmt.Sprintf("%d", kmean.K)})
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(js)
 
 }
 
+//SetClusterCount - Set Cluster Count Endpoint
 func SetClusterCount(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -213,8 +190,58 @@ func SetClusterCount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid k value!", http.StatusInternalServerError)
 		return
 	}
-	kmeans.k = val
-	kmeans.maxIter = 100
+	kmean.K = val
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, "Value of K updated to "+data)
+
+	ret, _ := json.Marshal(map[string]string{"k": strconv.Itoa(kmean.K), "Status": "Success"})
+	w.Write(ret)
+}
+
+//GetTextRecommended - Set Cluster Count Endpoint
+func GetTextRecommended(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	fmt.Printf("LEN TF_IDF: %d | LEN clist: %d | LEN TF: %d\n", len(tf_idf.TfIdf), len(cList), len(tf_idf.Tf))
+	data := r.FormValue("query")
+	set := []tfidf.WordSet{treatSentence(data)}
+	tf_idf.AddToWordSet(set)
+	tf_idf.SortMap()
+	tf_idf.SetCountIdx(set[0], len(cList))
+	tf_idf.ComputeTFIdx(set[0], len(cList))
+	//tf_idf.SetCount(set[0])
+	//tf_idf.ComputeTF(set[0])
+	tf_idf.ComputeIDF()
+	tf_idf.ComputeTFIDF()
+
+	kmean.Fit(tf_idf.GetAllPointsTFIDF()[:len(tf_idf.TfIdf)-1])
+
+	fmt.Println("After Fit")
+	fmt.Printf("LEN TF_IDF: %d | LEN clist: %d | LEN TF: %d\n", len(tf_idf.TfIdf), len(cList), len(tf_idf.Tf))
+	fmt.Println(kmean.LabelCount())
+	sse := kmean.ComputeSSE()
+	fmt.Println(sse)
+	centIdx := kmean.ComputeClosestCentroidIdx(tf_idf.GetPointByIndexTFIDF(len(tf_idf.TfIdf) - 1))
+	fmt.Println(centIdx)
+
+	kNearest := Items{}
+	for _, i := range rand.Perm(len(cList)) {
+		vals := strings.Split(cList[i], "\t")
+		m := map[string]string{}
+
+		for j, lab := range types {
+			m[lab] = vals[j]
+		}
+
+		js, err := json.Marshal(m)
+		check(err)
+		if kmean.Labels[i] == centIdx {
+			kNearest = append(kNearest, Item{Id: strconv.Itoa(i), Data: string(js)})
+		}
+		check(err)
+
+	}
+	l, _ := json.Marshal(kNearest)
+	w.Write(l)
+	w.WriteHeader(http.StatusOK)
+
 }

@@ -15,11 +15,11 @@ type Item struct {
 	// Identifier of the item
 	Id string `json:"id"`
 
-	// Data of the item
-	Data string `json:"data"`
-
 	//Which centroid is it nearest to
 	BelongsTo int `json:"belongsTo,omitempty"`
+
+	// Data of the item
+	Data string `json:"data"`
 }
 
 type Items []Item
