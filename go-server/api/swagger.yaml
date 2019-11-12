@@ -1,0 +1,140 @@
+---
+swagger: "2.0"
+info:
+  description: "This is a recommendation API using k-means Clustering"
+  version: "1.0.0"
+  title: "Recommendation API"
+  contact:
+    email: "capela.nuno@ua.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "virtserver.swaggerhub.com"
+basePath: "/Nuno19/Recomendation_Service/1.0.0"
+tags:
+- name: "admins"
+  description: "Secured Admin-only calls"
+- name: "developers"
+  description: "Operations available to regular developers"
+schemes:
+- "https"
+paths:
+  /loadItemList:
+    post:
+      tags:
+      - "admins"
+      summary: "load list of items(csv) to the collection"
+      description: "Load list of items into the system\n"
+      operationId: "loadItemList"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "itemList"
+        in: "query"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+        x-exportParamName: "ItemList"
+      responses:
+        200:
+          description: "posted item list"
+        400:
+          description: "bad input parameter"
+  /loadItem:
+    post:
+      tags:
+      - "admins"
+      summary: "load item(csv) to the collection"
+      description: "Load list of items into the system\n"
+      operationId: "loadItem"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "item"
+        in: "query"
+        required: true
+        type: "string"
+        x-exportParamName: "Item"
+      responses:
+        200:
+          description: "posted item"
+        400:
+          description: "bad input parameter"
+  /setClusterNumber:
+    post:
+      tags:
+      - "admins"
+      summary: "set number of clusters"
+      description: "Load list of items into the system\n"
+      operationId: "setClusterCount"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "itemList"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int32"
+        x-exportParamName: "ItemList"
+        x-optionalDataType: "Int32"
+      responses:
+        200:
+          description: "number of cluster was set"
+        400:
+          description: "bad input parameter"
+  /getRecommended:
+    get:
+      tags:
+      - "developers"
+      summary: "searches recommended"
+      description: "By passing in the appropriate options, you can search for\navailable\
+        \ cinemas\n"
+      operationId: "getRecommended"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "maxCount"
+        in: "query"
+        required: false
+        type: "integer"
+        format: "int32"
+        x-exportParamName: "MaxCount"
+        x-optionalDataType: "Int32"
+      - name: "movieId"
+        in: "query"
+        required: false
+        type: "integer"
+        minimum: 0
+        format: "int32"
+        x-exportParamName: "MovieId"
+        x-optionalDataType: "Int32"
+      responses:
+        200:
+          description: "cinemas found"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Item"
+        400:
+          description: "bad input parameter"
+definitions:
+  Item:
+    type: "object"
+    required:
+    - "data"
+    - "id"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "d701748f0851"
+        description: "Identifier of the movie"
+      data:
+        type: "string"
+        example: "Data of the item"
+        description: "Data of the item"
+    example:
+      data: "Data of the item"
+      id: "d701748f0851"
