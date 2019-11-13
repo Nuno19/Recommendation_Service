@@ -24,7 +24,6 @@ import (
 	kmeans "github.com/Nuno19/KMeans-Go"
 	tfidf "github.com/Nuno19/TF_IDF-Go"
 	"github.com/reiver/go-porterstemmer"
-	"google.golang.org/appengine"
 )
 
 var kmean kmeans.KMeans = kmeans.KMeans{K: 20, MaxIter: 100}
@@ -118,8 +117,6 @@ func LoadItemList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	ctx := appengine.NewContext(r)
-
 	Kerr := math.MaxFloat64
 	labels := make([]int, len(kmean.Points))
 	k := kmean.K
@@ -169,7 +166,6 @@ func LoadItemList(w http.ResponseWriter, r *http.Request) {
 
 		f.Sync()
 	}
-	bucket.createFile("Files.txt", toWrite)
 
 	f.Close()
 
