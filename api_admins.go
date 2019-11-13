@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	kmeans "github.com/Nuno19/KMeans-Go"
-	tfidf "github.com/Nuno19/TF_IDF-Go"
-	"github.com/reiver/go-porterstemmer"
+	kmeans "github.com/Nuno19/Recommendation_Service/vendor/github.com/Nuno19/KMeans-Go"
+	tfidf "github.com/Nuno19/Recommendation_Service/vendor/github.com/Nuno19/TF_IDF-Go"
+	"github.com/Nuno19/Recommendation_Service/vendor/github.com/reiver/go-porterstemmer"
 )
 
 var kmean kmeans.KMeans = kmeans.KMeans{K: 20, MaxIter: 100}
