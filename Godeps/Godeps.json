@@ -1,0 +1,30 @@
+{
+	"ImportPath": "Recommendation_Service-master/go-server",
+	"GoVersion": "go1.13",
+	"GodepVersion": "v80",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/Nuno19/KMeans-Go",
+			"Comment": "v0.1.4",
+			"Rev": "e2abe5a3dc1a55792722ccbe77d80c44e0c30c57"
+		},
+		{
+			"ImportPath": "github.com/Nuno19/TF_IDF-Go",
+			"Comment": "v0.1.6",
+			"Rev": "e49f6750c7a8139babaa001b93c48ea527776f37"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Comment": "v1.7.3-11-gf395758",
+			"Rev": "f395758b854c4efa789b8c1e9b73479704c548cb"
+		},
+		{
+			"ImportPath": "github.com/reiver/go-porterstemmer",
+			"Comment": "v1.0.1-11-gab0f922",
+			"Rev": "ab0f922907ea0321367a5776bd7a6c35d505d53b"
+		}
+	]
+}
