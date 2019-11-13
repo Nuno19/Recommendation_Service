@@ -169,7 +169,6 @@ func LoadItemList(w http.ResponseWriter, r *http.Request) {
 
 		f.Sync()
 	}
-	bucket.createFile("Files.txt", toWrite)
 
 	f.Close()
 
