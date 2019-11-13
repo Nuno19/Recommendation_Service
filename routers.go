@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Nuno19/Recommendation_Service/vendor/github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
 
 type Route struct {
